@@ -1,0 +1,4 @@
+pygments
+pdfkit
+wkhtmltopdf
+platformdirs

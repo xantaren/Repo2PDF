@@ -1,0 +1,15 @@
+{
+  "ignoredFiles": [
+    ".gitignore",
+    "config.json"
+  ],
+  "ignoredExtensions": [
+    ".log",
+    ".csv",
+    ".tmp",
+    ".png",
+    ".jpg",
+    ".gif",
+    ".svg"
+  ]
+}
