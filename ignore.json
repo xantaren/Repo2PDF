@@ -1,9 +1,9 @@
 {
   "ignoredFiles": [
-    ".gitignore",
-    "config.json"
+    ".gitignore"
   ],
   "ignoredExtensions": [
+    ".git",
     ".log",
     ".csv",
     ".tmp",
@@ -11,5 +11,8 @@
     ".jpg",
     ".gif",
     ".svg"
+  ],
+  "ignoredPaths": [
+    ".git"
   ]
 }

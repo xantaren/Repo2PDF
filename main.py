@@ -87,18 +87,29 @@ def remove_readonly_rmtree(path):
 
 
 def load_ignore_config(repo_path):
-    """Loads ignore configuration from repo2pdf.ignore if available."""
-    ignore_file = os.path.join(repo_path, "repo2pdf.ignore")
+    """Loads ignore configuration from ignore.json if available."""
+    ignore_file = os.path.join(repo_path, "ignore.json")
+    ignore_config = {"ignoredFiles": [], "ignoredExtensions": [], "ignoredPaths": []}
+
     if os.path.exists(ignore_file):
         with open(ignore_file, "r") as f:
-            return json.load(f)
-    return {"ignoredFiles": [], "ignoredExtensions": []}
+            print(ignore_file)
+            loaded_config = json.load(f)
+            ignore_config.update(loaded_config)  # Merge loaded config with defaults
+
+    return ignore_config
 
 
-def should_exclude(file_path, ignore_config):
+def should_exclude(repo_path, file_path, ignore_config):
     """Checks if a file should be ignored."""
-    if os.path.basename(file_path) in ignore_config["ignoredFiles"] or os.path.splitext(file_path)[1] in ignore_config[
-        "ignoredExtensions"]:
+    abs_file_path = os.path.abspath(file_path)
+    for ignored_path in ignore_config["ignoredPaths"]:
+        abs_ignored_path = os.path.abspath(os.path.join(repo_path, ignored_path))
+        if abs_file_path.startswith(abs_ignored_path):
+            print(f"Excluding {file_path} based on ignore rules.")
+            return True
+    if (os.path.basename(file_path) in ignore_config["ignoredFiles"]
+            or os.path.splitext(file_path)[1] in ignore_config["ignoredExtensions"]):
         print(f"Excluding {file_path} based on ignore rules.")
         return True
     return False
@@ -112,7 +123,7 @@ def generate_pdf(repo_path, output_file, ignore_config):
     for root, _, files in os.walk(repo_path):
         for file in files:
             file_path = os.path.join(root, file)
-            if should_exclude(file_path, ignore_config):
+            if should_exclude(repo_path, file_path, ignore_config):
                 continue
 
             try:
@@ -147,7 +158,7 @@ def main():
     else:
         clone_repo(input_path, local_path)
 
-    ignore_config = load_ignore_config(local_path)
+    ignore_config = load_ignore_config(os.getcwd())
     generate_pdf(local_path, output_file, ignore_config)
 
     if input_path.endswith(".zip") or not os.path.isdir(input_path):
