@@ -27,7 +27,7 @@ pip install -r requirements.txt
 Run the script and provide a repository URL, local directory, or ZIP file when prompted:
 
 ```sh
-python repo2pdf.py
+python main.py
 ```
 
 You will be asked to enter:
