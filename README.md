@@ -3,7 +3,7 @@
 ## Overview
 This tool was inspired by [repo2pdf](https://github.com/BankkRoll/repo2pdf?tab=MIT-1-ov-file).
 
-Repo2PDF is a Python tool that converts source code repositories into a well-formatted PDF. It supports repositories from GitHub, local directories, and ZIP files containing source code. The tool automatically installs `wkhtmltopdf` if needed, formats code using syntax highlighting, and excludes specified files based on a `repo2pdf.ignore` configuration.
+Repo2PDF is a Python tool that converts source code repositories into a well-formatted PDF. It supports repositories from GitHub, local directories, and ZIP files containing source code. The tool automatically installs `wkhtmltopdf` if needed, formats code using syntax highlighting, and excludes specified files based on a `ignore.json` configuration.
 
 ## Features
 - Clone a GitHub repository and generate a PDF of its source code.
@@ -42,6 +42,9 @@ You can specify files and extensions to exclude by creating a `repo2pdf.ignore` 
 
 ```json
 {
+  "ignoredFiles": [
+    ".gitignore"
+  ],
   "ignoredFiles": [
     "README.md",
     "LICENSE"
