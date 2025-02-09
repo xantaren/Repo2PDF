@@ -1,14 +1,11 @@
 import os
 import json
 import shutil
-import pygments
 import pdfkit
 import subprocess
 import platform
 import stat
 import zipfile
-from pygments.lexers import get_lexer_by_name
-from pygments.formatters import HtmlFormatter
 
 
 def is_wkhtmltopdf_installed():
@@ -116,10 +113,67 @@ def should_exclude(repo_path, file_path, ignore_config):
 
 
 def generate_pdf(repo_path, output_file, ignore_config):
-    """Processes source files and generates a PDF."""
+    """Processes source files and generates a PDF with minimal spacing."""
     wkhtmltopdf_path = get_wkhtmltopdf_path()
 
-    html_content = """<html><body>"""
+    # CSS with minimal spacing
+    css = """
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            counter-reset: line;
+            line-height: 1.4;
+            font-size: 11px;
+            background-color: #f8f8f8;
+            padding: 5px 0;
+        }
+        code {
+            display: block;
+            padding-left: 50px;
+            position: relative;
+        }
+        code > span {
+            display: block;
+            padding: 0 5px 0 0;
+            min-height: 1.4em;
+        }
+        code > span:before {
+            counter-increment: line;
+            content: counter(line);
+            position: absolute;
+            left: 0;
+            width: 35px;
+            text-align: right;
+            color: #666;
+            border-right: 1px solid #ddd;
+            padding-right: 8px;
+            font-size: 11px;
+        }
+        .file-header {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 5px 8px;
+            margin: 0;
+            background-color: #f1f1f1;
+            font-size: 14px;
+            color: #333;
+        }
+        hr {
+            margin: 10px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+    """
+
+    html_content = f"""
+    <html>
+    <head>
+        <style>{css}</style>
+    </head>
+    <body style="margin:0;padding:0;">
+    """
+
     for root, _, files in os.walk(repo_path):
         for file in files:
             file_path = os.path.join(root, file)
@@ -127,18 +181,42 @@ def generate_pdf(repo_path, output_file, ignore_config):
                 continue
 
             try:
-                ext = os.path.splitext(file)[1][1:]
-                lexer = get_lexer_by_name(ext) if ext else get_lexer_by_name("text")
                 with open(file_path, "r", encoding="utf-8") as f:
                     code = f.read()
-                formatted_code = pygments.highlight(code, lexer, HtmlFormatter())
-                html_content += f"<h2>{file}</h2>{formatted_code}<hr>"
+
+                code_html = ""
+                for line in code.split('\n'):
+                    line = (line.replace('&', '&amp;')
+                            .replace('<', '&lt;')
+                            .replace('>', '&gt;')
+                            .replace('"', '&quot;')
+                            .replace("'", '&#39;'))
+                    code_html += f"<span>{line}</span>"
+
+                relative_path = os.path.relpath(file_path, repo_path)
+                html_content += f"""
+                    <div class="file-header">{relative_path}</div>
+                    <pre><code>{code_html}</code></pre>
+                    <hr>
+                """
             except Exception as e:
                 print(f"Skipping {file}: {e}")
 
     html_content += "</body></html>"
+
+    # Minimal margins in PDF options
+    options = {
+        'encoding': 'UTF-8',
+        'quiet': '',
+        'margin-top': '2mm',
+        'margin-right': '2mm',
+        'margin-bottom': '2mm',
+        'margin-left': '2mm',
+        'page-size': 'A4'
+    }
+
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-    pdfkit.from_string(html_content, output_file, configuration=config)
+    pdfkit.from_string(html_content, output_file, configuration=config, options=options)
     print(f"PDF generated: {output_file}")
 
 
