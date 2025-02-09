@@ -7,6 +7,8 @@ import platform
 import stat
 import zipfile
 
+is_pretty_pdf = True
+
 
 def is_wkhtmltopdf_installed():
     """Checks if wkhtmltopdf is installed."""
@@ -112,7 +114,7 @@ def should_exclude(repo_path, file_path, ignore_config):
     return False
 
 
-def generate_pdf(repo_path, output_file, ignore_config):
+def generate_pretty_pdf(repo_path, output_file, ignore_config):
     """Processes source files and generates a PDF with minimal spacing."""
     wkhtmltopdf_path = get_wkhtmltopdf_path()
 
@@ -220,6 +222,59 @@ def generate_pdf(repo_path, output_file, ignore_config):
     print(f"PDF generated: {output_file}")
 
 
+def generate_pdf(repo_path, output_file, ignore_config):
+    """Generates minimal PDF for LLM consumption with focus on size and speed."""
+    wkhtmltopdf_path = get_wkhtmltopdf_path()
+
+    # Minimal HTML with no styling
+    html_content = "<html><body style='font-family:monospace;font-size:10px;margin:0;padding:0'>"
+
+    for root, _, files in os.walk(repo_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if should_exclude(repo_path, file_path, ignore_config):
+                continue
+
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    code = f.read()
+
+                # Minimal escaping - only what's absolutely necessary for HTML
+                code = (code.replace('&', '&amp;')
+                        .replace('<', '&lt;')
+                        .replace('>', '&gt;'))
+
+                relative_path = os.path.relpath(file_path, repo_path)
+                # Use plain text with newlines, no fancy formatting
+                html_content += f"File: {relative_path}\n{code}\n---\n"
+            except Exception as e:
+                print(f"Skipping {file}: {e}")
+
+    html_content += "</body></html>"
+
+    # Minimal PDF options for smallest file size
+    options = {
+        'encoding': 'UTF-8',
+        'quiet': '',
+        'margin-top': '5mm',
+        'margin-right': '5mm',
+        'margin-bottom': '5mm',
+        'margin-left': '5mm',
+        'page-size': 'A4',
+        'no-outline': None,
+        'no-images': None,
+        'disable-javascript': None,
+        'disable-external-links': None,
+        'disable-internal-links': None,
+        'grayscale': None,
+        'lowquality': None,
+    }
+
+    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+    pdfkit.from_string(html_content, output_file, configuration=config, options=options)
+    print(f"PDF generated: {output_file}")
+
+
 def main():
     print("Checking for wkhtmltopdf installation...")
     install_wkhtmltopdf()
@@ -237,7 +292,11 @@ def main():
         clone_repo(input_path, local_path)
 
     ignore_config = load_ignore_config(os.getcwd())
-    generate_pdf(local_path, output_file, ignore_config)
+
+    if is_pretty_pdf:
+        generate_pretty_pdf(local_path, output_file, ignore_config)
+    else:
+        generate_pdf(local_path, output_file, ignore_config)
 
     if input_path.endswith(".zip") or not os.path.isdir(input_path):
         remove_readonly_rmtree(local_path)  # Cleanup
