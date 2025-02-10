@@ -6,8 +6,7 @@ import subprocess
 import platform
 import stat
 import zipfile
-
-is_pretty_pdf = True
+import argparse
 
 
 def is_wkhtmltopdf_installed():
@@ -77,11 +76,9 @@ def extract_zip(zip_path, extract_to):
 
 def remove_readonly_rmtree(path):
     """Removes a directory even if it contains read-only files."""
-
     def onerror(func, path, exc_info):
         os.chmod(path, stat.S_IWRITE)
         func(path)
-
     shutil.rmtree(path, onerror=onerror)
 
 
@@ -92,7 +89,7 @@ def load_ignore_config(repo_path):
 
     if os.path.exists(ignore_file):
         with open(ignore_file, "r") as f:
-            print(ignore_file)
+            print(f"Loading ignore config from {ignore_file}")
             loaded_config = json.load(f)
             ignore_config.update(loaded_config)  # Merge loaded config with defaults
 
@@ -115,10 +112,9 @@ def should_exclude(repo_path, file_path, ignore_config):
 
 
 def generate_pretty_pdf(repo_path, output_file, ignore_config):
-    """Processes source files and generates a PDF with minimal spacing."""
+    """Processes source files and generates a PDF with enhanced formatting."""
     wkhtmltopdf_path = get_wkhtmltopdf_path()
 
-    # CSS with minimal spacing
     css = """
         pre {
             white-space: pre-wrap;
@@ -206,7 +202,6 @@ def generate_pretty_pdf(repo_path, output_file, ignore_config):
 
     html_content += "</body></html>"
 
-    # Minimal margins in PDF options
     options = {
         'encoding': 'UTF-8',
         'quiet': '',
@@ -223,10 +218,9 @@ def generate_pretty_pdf(repo_path, output_file, ignore_config):
 
 
 def generate_pdf(repo_path, output_file, ignore_config):
-    """Generates minimal PDF for LLM consumption with focus on size and speed."""
+    """Generates a minimal PDF with basic formatting."""
     wkhtmltopdf_path = get_wkhtmltopdf_path()
 
-    # Minimal HTML with no styling
     html_content = "<html><body style='font-family:monospace;font-size:10px;margin:0;padding:0'>"
 
     for root, _, files in os.walk(repo_path):
@@ -239,20 +233,17 @@ def generate_pdf(repo_path, output_file, ignore_config):
                 with open(file_path, "r", encoding="utf-8") as f:
                     code = f.read()
 
-                # Minimal escaping - only what's absolutely necessary for HTML
                 code = (code.replace('&', '&amp;')
                         .replace('<', '&lt;')
                         .replace('>', '&gt;'))
 
                 relative_path = os.path.relpath(file_path, repo_path)
-                # Use plain text with newlines, no fancy formatting
                 html_content += f"File: {relative_path}\n{code}\n---\n"
             except Exception as e:
                 print(f"Skipping {file}: {e}")
 
     html_content += "</body></html>"
 
-    # Minimal PDF options for smallest file size
     options = {
         'encoding': 'UTF-8',
         'quiet': '',
@@ -276,10 +267,19 @@ def generate_pdf(repo_path, output_file, ignore_config):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Generate a PDF from a GitHub repository, local folder, or ZIP file."
+    )
+    parser.add_argument("input_path", help="GitHub repository URL, local path, or ZIP file.")
+    parser.add_argument("--prettify", action="store_true", help="Generate a pretty PDF with enhanced formatting.")
+    args = parser.parse_args()
+
     print("Checking for wkhtmltopdf installation...")
     install_wkhtmltopdf()
 
-    input_path = input("Enter a GitHub repository URL, a local path, or a zip file: ")
+    input_path = args.input_path
+    is_pretty_pdf = args.prettify
+
     local_path = "./temp_repo"
     repo_name = os.path.splitext(os.path.basename(input_path))[0]
     output_file = f"{repo_name}.pdf"

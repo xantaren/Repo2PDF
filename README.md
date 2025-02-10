@@ -13,7 +13,6 @@ This tool was inspired by [repo2pdf](https://github.com/BankkRoll/repo2pdf).
 - Extract and process a ZIP file containing a repository.
 - Ignore unwanted files based on a configuration file.
 - Automatic `wkhtmltopdf` installation if missing.
-- Handles read-only files and directory cleanup automatically.
 
 ## Installation
 
@@ -28,15 +27,18 @@ pip install -r requirements.txt
 Run the script and provide a repository URL, local directory, or ZIP file when prompted:
 
 ```sh
-python main.py
+python3 main.py <repository_path> [--prettify]
 ```
+For example:
+To generate a PDF with basic formatting:
 
-You will be asked to enter:
-- A **GitHub repository URL** (e.g., `https://github.com/user/repo`)
-- A **local directory** path
-- A **ZIP file** containing a repository
-
-The script will process the files, apply syntax highlighting, and generate a PDF with the same name as the repository, directory, or ZIP file.
+```sh
+python3 main.py https://github.com/user/repo
+```
+To generate a PDF with enhanced (pretty) formatting:
+```sh
+python3 main.py https://github.com/user/repo --prettify
+```
 
 ## Ignoring Files
 You can specify files and extensions to exclude by creating a `repo2pdf.ignore` file in the repository root:
